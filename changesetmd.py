@@ -70,8 +70,8 @@ class ChangesetMD:
     def insertNewBatchComment(self, connection, comment_arr):
         cursor = connection.cursor()
         sql = """INSERT into osm_changeset_comment
-                    (comment_changeset_id, comment_user_id, comment_user_name, comment_date, comment_text)
-                    values (%s,%s,%s,%s,%s)"""
+                    (comment_changeset_id, comment_commenter_id, comment_commenter_name, comment_commented_id, comment_commented_name, comment_date, comment_text)
+                    values (%s,%s,%s,%s,%s,%s,%s)"""
         psycopg2.extras.execute_batch(cursor, sql, comment_arr)
         cursor.close()
 
@@ -114,6 +114,8 @@ class ChangesetMD:
                         elem.attrib["id"],
                         commentElement.attrib.get("uid"),
                         commentElement.attrib.get("user"),
+                        elem.attrib["uid"],
+                        elem.attrib["user"],
                         commentElement.attrib.get("date"),
                         text,
                     )
