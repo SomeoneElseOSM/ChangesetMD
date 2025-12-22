@@ -30,8 +30,13 @@ It is easiest if your OS user has access to this database. I just created a user
 
 Full Debian build instructions
 ------------------------------
+Debian 12:
 
     sudo apt install sudo screen locate git tar unzip wget bzip2 apache2 python3-psycopg2 python3-yaml libpq-dev postgresql postgresql-contrib postgis postgresql-15-postgis-3 postgresql-15-postgis-3-scripts net-tools curl python3-full gcc libpython3.11-dev libxml2-dev libxslt-dev
+
+Debian 13:
+
+    sudo apt install sudo screen locate git tar unzip wget bzip2 apache2 python3-psycopg2 python3-yaml libpq-dev postgresql postgresql-contrib postgis net-tools curl python3-full gcc libxml2-dev libxslt1-dev postgresql-17-postgis-3 postgresql-17-postgis-3-scripts python3-dev python3-venv
 
     python3 -m venv .venv
     source .venv/bin/activate
@@ -93,6 +98,8 @@ Now you are ready to start consuming the replication diffs with the following co
     python changesetmd.py -d <database> -r
 
 Run this command as often as you wish to keep your database up to date with OSM. You can put it in a cron job that runs every minute if you like. The first run may take a few minutes to catch up but each subsequent run should only take a few seconds to finish.
+
+There is an example script "call_changesetmd_replication.sh" that is desgned to be modified to do this automatically from a cron job.  Another example script "reset_changesetmd_replication.sh" can be modified to be run shortly after reboot to clear the "update in progress" flag in the database.
 
 Notes
 ------------
