@@ -187,6 +187,12 @@ class ChangesetMD:
         print("parsing complete")
         print("parsed {:,}".format(parsedCount))
 
+    # ------------------------------------------------------------------------------
+    # Using a sequence number such as 6916632, fetch the corresponding gzipped
+    # changeset file such as 
+    # https://planet.openstreetmap.org/replication/changesets/006/916/632.osm.gz
+    # and return the ungzipped contents of that.
+    # ------------------------------------------------------------------------------
     def fetchReplicationFile(self, sequenceNumber):
         sequenceNumber = str(sequenceNumber).zfill(9)
         topdir = str(sequenceNumber)[:3]
@@ -198,6 +204,30 @@ class ChangesetMD:
         replicationData = replicationFile.raw
         f = gzip.GzipFile(fileobj=replicationData)
         return f
+
+    # ------------------------------------------------------------------------------
+    # Using a sequence number such as 6916632, fetch the corresponding gzipped
+    # state file such as 
+    # https://planet.openstreetmap.org/replication/changesets/006/916/632.state.txt
+    # and return the value of "sequence" from that
+    # Very old server state files don't exist; we just return an artificially early
+    # date in that case.
+    # ------------------------------------------------------------------------------
+    def fetchReplicationTimestamp(self, sequenceNumber):
+        sequenceNumber = str(sequenceNumber).zfill(9)
+        topdir = str(sequenceNumber)[:3]
+        subdir = str(sequenceNumber)[3:6]
+        fileNumber = str(sequenceNumber)[-3:]
+        fileUrl = BASE_REPL_URL + topdir + "/" + subdir + "/" + fileNumber + ".state.txt"
+        print("opening replication state at " + fileUrl)
+        try:
+            thisServerState = yaml.full_load(requests.get(fileUrl).text)
+            thisServerTimestamp = thisServerState["last_run"]
+            print("thisServerTimestamp " + str(thisServerTimestamp))
+        except Exception as e:
+            print("error retrieving old server state file.")
+            thisServerTimestamp = '1970-01-01'
+        return thisServerTimestamp
 
     def doReplication(self, connection):
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -248,6 +278,15 @@ class ChangesetMD:
                 if lastServerSequence > lastDbSequence:
                     print("server has new sequence. commencing replication")
                     currentSequence = lastDbSequence + 1
+                    # ------------------------------------------------------------------------------
+                    # Obtain (if it exists) the timestamp for the state file that we are about to 
+                    # parse
+                    # ------------------------------------------------------------------------------
+                    thisServerTimestamp = self.fetchReplicationTimestamp( currentSequence )
+                    # ------------------------------------------------------------------------------
+                    # A "while" below will run until all pending minutely data has been consumed
+                    # Change to an "if" to only run once (useful for testing)
+                    # ------------------------------------------------------------------------------
                     while currentSequence <= lastServerSequence:
                         self.parseFile(
                             connection, self.fetchReplicationFile(currentSequence), True
@@ -258,7 +297,13 @@ class ChangesetMD:
                         )
                         connection.commit()
                         currentSequence += 1
-                    timestamp = lastServerTimestamp
+                    # ------------------------------------------------------------------------------
+                    # Previously lastServerTimestamp was used here (the last available timestamp at 
+                    # OSM)
+                    # Instead we use thisServerTimestamp, which is the timestamp of the latest file
+                    # that we have applied.
+                    # ------------------------------------------------------------------------------
+                    timestamp = thisServerTimestamp
                 print("finished with replication. Clearing status record")
             except Exception as e:
                 print("error during replication")
