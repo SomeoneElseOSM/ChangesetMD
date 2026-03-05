@@ -184,7 +184,6 @@ class ChangesetMD:
         self.insertNewBatch(connection, changesets)
         self.insertNewBatchComment(connection, comments)
         connection.commit()
-        print("parsing complete")
         print("parsed {:,}".format(parsedCount))
 
     # ------------------------------------------------------------------------------
@@ -265,7 +264,6 @@ class ChangesetMD:
         try:
             serverState = yaml.full_load(requests.get(BASE_REPL_URL + "state.yaml").text)
             lastServerSequence = serverState["sequence"]
-            print("got sequence")
             lastServerTimestamp = serverState["last_run"]
             print("last timestamp on server: " + str(lastServerTimestamp))
         except Exception as e:
@@ -287,7 +285,9 @@ class ChangesetMD:
                     # A "while" below will run until all pending minutely data has been consumed
                     # Change to an "if" to only run once (useful for testing)
                     # ------------------------------------------------------------------------------
-                    while currentSequence <= lastServerSequence:
+                    currentIterations = 1
+                    maxIterations=int(args.replicationIterations)
+                    while (( currentSequence <= lastServerSequence ) and (( maxIterations == 0 ) or ( currentIterations <= maxIterations ))):
                         self.parseFile(
                             connection, self.fetchReplicationFile(currentSequence), True
                         )
@@ -297,6 +297,7 @@ class ChangesetMD:
                         )
                         connection.commit()
                         currentSequence += 1
+                        currentIterations += 1
                     # ------------------------------------------------------------------------------
                     # Previously lastServerTimestamp was used here (the last available timestamp at 
                     # OSM)
@@ -390,6 +391,14 @@ if __name__ == "__main__":
         dest="doReplication",
         default=False,
         help="Apply a replication file to an existing database",
+    )
+    argParser.add_argument(
+        "-i",
+        "--iterations",
+        action="store",
+        dest="replicationIterations",
+        default=0,
+        help="Replication Iterations",
     )
     argParser.add_argument(
         "-g",
