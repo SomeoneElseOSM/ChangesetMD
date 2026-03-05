@@ -460,17 +460,17 @@ if __name__ == "__main__":
             )
             sys.exist(1)
 
-        if not args.doReplication:
-            cursor = conn.cursor()
-            print("creating constraints")
-            cursor.execute(queries.createConstraints)
-            print("creating indexes")
-            cursor.execute(queries.createIndexes)
-            if args.createGeometry:
-                cursor.execute(queries.createGeomIndex)
-            conn.commit()
+    if not args.doReplication:
+        cursor = conn.cursor()
+        print("creating constraints")
+        cursor.execute(queries.createConstraints)
+        print("creating indexes")
+        cursor.execute(queries.createIndexes)
+        if args.createGeometry:
+            cursor.execute(queries.createGeomIndex)
+        conn.commit()
 
-        conn.close()
+    conn.close()
 
     endTime = datetime.now()
     timeCost = endTime - beginTime

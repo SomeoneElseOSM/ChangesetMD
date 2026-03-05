@@ -44,6 +44,7 @@ createIndexes = '''CREATE INDEX user_name_idx ON osm_changeset(user_name);
 CREATE INDEX user_id_idx ON osm_changeset(user_id);
 CREATE INDEX created_idx ON osm_changeset(created_at);
 CREATE INDEX tags_idx ON osm_changeset USING GIN(tags);
+CREATE INDEX comment_changeset_id_idx ON osm_changeset_comment(comment_changeset_id);
 '''
 
 createGeometryColumn = '''
