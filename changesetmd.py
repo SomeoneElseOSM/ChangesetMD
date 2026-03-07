@@ -93,98 +93,101 @@ class ChangesetMD:
         startTime = datetime.now()
         cursor = connection.cursor()
         context = etree.iterparse(changesetFile)
-        action, root = next(context)
-        changesets = []
-        comments = []
-        for action, elem in context:
-            if elem.tag != "changeset":
-                continue
+        try:
+            action, root = next(context)
+            changesets = []
+            comments = []
+            for action, elem in context:
+                if elem.tag != "changeset":
+                    continue
 
-            parsedCount += 1
+                parsedCount += 1
 
-            tags = {}
-            for tag in elem.iterchildren(tag="tag"):
-                tags[tag.attrib["k"]] = tag.attrib["v"]
+                tags = {}
+                for tag in elem.iterchildren(tag="tag"):
+                    tags[tag.attrib["k"]] = tag.attrib["v"]
 
-            for discussion in elem.iterchildren(tag="discussion"):
-                for commentElement in discussion.iterchildren(tag="comment"):
-                    for text in commentElement.iterchildren(tag="text"):
-                        text = text.text
-                    comment = (
-                        elem.attrib["id"],
-                        commentElement.attrib.get("uid"),
-                        commentElement.attrib.get("user"),
-                        commentElement.attrib.get("date"),
-                        text,
-                    )
-                    comments.append(comment)
+                for discussion in elem.iterchildren(tag="discussion"):
+                    for commentElement in discussion.iterchildren(tag="comment"):
+                        for text in commentElement.iterchildren(tag="text"):
+                            text = text.text
+                        comment = (
+                            elem.attrib["id"],
+                            commentElement.attrib.get("uid"),
+                            commentElement.attrib.get("user"),
+                            commentElement.attrib.get("date"),
+                            text,
+                        )
+                        comments.append(comment)
 
-            if doReplication:
-                self.deleteExisting(connection, elem.attrib["id"])
+                if doReplication:
+                    self.deleteExisting(connection, elem.attrib["id"])
 
-            if self.createGeometry:
-                changesets.append(
-                    (
-                        elem.attrib["id"],
-                        elem.attrib.get("uid", None),
-                        elem.attrib["created_at"],
-                        elem.attrib.get("min_lat", None),
-                        elem.attrib.get("max_lat", None),
-                        elem.attrib.get("min_lon", None),
-                        elem.attrib.get("max_lon", None),
-                        elem.attrib.get("closed_at", None),
-                        elem.attrib.get("open", None),
-                        elem.attrib.get("num_changes", None),
-                        elem.attrib.get("user", None),
-                        tags,
-                        elem.attrib.get("min_lon", None),
-                        elem.attrib.get("min_lat", None),
-                        elem.attrib.get("max_lon", None),
-                        elem.attrib.get("max_lat", None),
-                    )
-                )
-            else:
-                changesets.append(
-                    (
-                        elem.attrib["id"],
-                        elem.attrib.get("uid", None),
-                        elem.attrib["created_at"],
-                        elem.attrib.get("min_lat", None),
-                        elem.attrib.get("max_lat", None),
-                        elem.attrib.get("min_lon", None),
-                        elem.attrib.get("max_lon", None),
-                        elem.attrib.get("closed_at", None),
-                        elem.attrib.get("open", None),
-                        elem.attrib.get("num_changes", None),
-                        elem.attrib.get("user", None),
-                        tags,
-                    )
-                )
-
-            if (parsedCount % 100000) == 0:
-                self.insertNewBatch(connection, changesets)
-                self.insertNewBatchComment(connection, comments)
-                changesets = []
-                comments = []
-                print("parsed {}".format(("{:,}".format(parsedCount))))
-                print(
-                    "cumulative rate: {}/sec".format(
-                        "{:,.0f}".format(
-                            parsedCount
-                            / timedelta.total_seconds(datetime.now() - startTime)
+                if self.createGeometry:
+                    changesets.append(
+                        (
+                            elem.attrib["id"],
+                            elem.attrib.get("uid", None),
+                            elem.attrib["created_at"],
+                            elem.attrib.get("min_lat", None),
+                            elem.attrib.get("max_lat", None),
+                            elem.attrib.get("min_lon", None),
+                            elem.attrib.get("max_lon", None),
+                            elem.attrib.get("closed_at", None),
+                            elem.attrib.get("open", None),
+                            elem.attrib.get("num_changes", None),
+                            elem.attrib.get("user", None),
+                            tags,
+                            elem.attrib.get("min_lon", None),
+                            elem.attrib.get("min_lat", None),
+                            elem.attrib.get("max_lon", None),
+                            elem.attrib.get("max_lat", None),
                         )
                     )
-                )
+                else:
+                    changesets.append(
+                        (
+                            elem.attrib["id"],
+                            elem.attrib.get("uid", None),
+                            elem.attrib["created_at"],
+                            elem.attrib.get("min_lat", None),
+                            elem.attrib.get("max_lat", None),
+                            elem.attrib.get("min_lon", None),
+                            elem.attrib.get("max_lon", None),
+                            elem.attrib.get("closed_at", None),
+                            elem.attrib.get("open", None),
+                            elem.attrib.get("num_changes", None),
+                            elem.attrib.get("user", None),
+                            tags,
+                        )
+                    )
 
-            # clear everything we don't need from memory to avoid leaking
-            elem.clear()
-            while elem.getprevious() is not None:
-                del elem.getparent()[0]
-        # Update whatever is left, then commit
-        self.insertNewBatch(connection, changesets)
-        self.insertNewBatchComment(connection, comments)
-        connection.commit()
-        print("parsed {:,}".format(parsedCount))
+                if (parsedCount % 100000) == 0:
+                    self.insertNewBatch(connection, changesets)
+                    self.insertNewBatchComment(connection, comments)
+                    changesets = []
+                    comments = []
+                    print("parsed {}".format(("{:,}".format(parsedCount))))
+                    print(
+                        "cumulative rate: {}/sec".format(
+                            "{:,.0f}".format(
+                                parsedCount
+                                / timedelta.total_seconds(datetime.now() - startTime)
+                            )
+                        )
+                    )
+
+                # clear everything we don't need from memory to avoid leaking
+                elem.clear()
+                while elem.getprevious() is not None:
+                    del elem.getparent()[0]
+            # Update whatever is left, then commit
+            self.insertNewBatch(connection, changesets)
+            self.insertNewBatchComment(connection, comments)
+            connection.commit()
+            print("parsed {:,}".format(parsedCount))
+        except Exception as e:
+            print("error processing changesetFile.")
 
     # ------------------------------------------------------------------------------
     # Using a sequence number such as 6916632, fetch the corresponding gzipped
