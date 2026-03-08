@@ -38,14 +38,17 @@ dropIndexes = '''ALTER TABLE osm_changeset DROP CONSTRAINT IF EXISTS osm_changes
 DROP INDEX IF EXISTS user_name_idx, user_id_idx, created_idx, tags_idx, changeset_geom_gist ;
 '''
 
+dropCommentIndexes = '''DROP INDEX IF EXISTS comment_changeset_id_idx ;'''
+
 createConstraints = '''ALTER TABLE osm_changeset ADD CONSTRAINT osm_changeset_pkey PRIMARY KEY(id);'''
 
 createIndexes = '''CREATE INDEX user_name_idx ON osm_changeset(user_name);
 CREATE INDEX user_id_idx ON osm_changeset(user_id);
 CREATE INDEX created_idx ON osm_changeset(created_at);
 CREATE INDEX tags_idx ON osm_changeset USING GIN(tags);
-CREATE INDEX comment_changeset_id_idx ON osm_changeset_comment(comment_changeset_id);
 '''
+
+createCommentIndex = '''CREATE INDEX comment_changeset_id_idx ON osm_changeset_comment(comment_changeset_id);'''
 
 createGeometryColumn = '''
 CREATE EXTENSION IF NOT EXISTS postgis;

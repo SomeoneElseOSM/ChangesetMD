@@ -37,7 +37,21 @@ class ChangesetMD:
         cursor = connection.cursor()
         cursor.execute("TRUNCATE TABLE osm_changeset_comment CASCADE;")
         cursor.execute("TRUNCATE TABLE osm_changeset CASCADE;")
-        cursor.execute(queries.dropIndexes)
+
+        try:
+            cursor.execute(queries.dropIndexes)
+        except Exception as e:
+            print("error in queries.dropIndexes")
+            print(e)
+        connection.commit()
+
+        try:
+            cursor.execute(queries.dropCommentIndexes)
+        except Exception as e:
+            print("error in queries.dropCommentIndexes")
+            print(e)
+        connection.commit()
+
         cursor.execute(
             "UPDATE osm_changeset_state set last_sequence = -1, last_timestamp = null, update_in_progress = 0"
         )
@@ -188,6 +202,7 @@ class ChangesetMD:
             print("parsed {:,}".format(parsedCount))
         except Exception as e:
             print("error processing changesetFile.")
+            print(e)
 
     # ------------------------------------------------------------------------------
     # Using a sequence number such as 6916632, fetch the corresponding gzipped
@@ -465,12 +480,37 @@ if __name__ == "__main__":
 
     if not args.doReplication:
         cursor = conn.cursor()
-        print("creating constraints")
-        cursor.execute(queries.createConstraints)
-        print("creating indexes")
-        cursor.execute(queries.createIndexes)
+
+        try:
+            print("creating constraints")
+            cursor.execute(queries.createConstraints)
+        except Exception as e:
+                print("Error creating constraints")
+                print(e)
+        conn.commit()
+
+        try:
+            print("creating indexes")
+            cursor.execute(queries.createIndexes)
+        except Exception as e:
+                print("Error creating indexes")
+                print(e)
+        conn.commit()
+
+        try:
+            print("creating comment index")
+            cursor.execute(queries.createCommentIndex)
+        except Exception as e:
+                print("Error in createCommentIndex")
+                print(e)
+        conn.commit()
+
         if args.createGeometry:
-            cursor.execute(queries.createGeomIndex)
+            try:
+                cursor.execute(queries.createGeomIndex)
+            except Exception as e:
+                print("Error in createGeomIndex")
+                print(e)
         conn.commit()
 
     conn.close()
