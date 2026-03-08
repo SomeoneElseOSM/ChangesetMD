@@ -36,7 +36,7 @@ Debian 12:
 
 Debian 13:
 
-    sudo apt install sudo screen locate git tar unzip wget bzip2 apache2 python3-psycopg2 python3-yaml libpq-dev postgresql postgresql-contrib postgis net-tools curl python3-full gcc libxml2-dev libxslt1-dev postgresql-17-postgis-3 postgresql-17-postgis-3-scripts python3-dev python3-venv
+    sudo apt install sudo screen locate git tar unzip wget bzip2 apache2 python3-psycopg2 python3-yaml libpq-dev postgresql postgresql-contrib postgis net-tools curl python3-full gcc libxml2-dev libxslt1-dev postgresql-17-postgis-3 postgresql-17-postgis-3-scripts python3-dev python3.13-venv
 
     python3 -m venv .venv
     source .venv/bin/activate
