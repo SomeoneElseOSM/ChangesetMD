@@ -95,7 +95,9 @@ This gives the file 048.osm.gz in the directory [http://planet.osm.org/replicati
 
 Now you are ready to start consuming the replication diffs with the following command:
 
-    python changesetmd.py -d <database> -r
+    python changesetmd.py -d <database> -r -g -i number
+
+Again, the `-g` | `--geometry` argument is optional.  The `-i` | `--iterations` argument is also optional.  If not specified or set to 0, ChangesetMD will consume all diffs until it has caught up.  If specified, a maximum of `number` iterations will be performed in one go, allowing a "scheduled slow catch-up" in a similar way to how PyOsmium is used to read minutely data diffs.  The `last_sequence` and `last_timestamp` will be updated as replication diffs are consumed, allowing progress to be easily seen.
 
 Run this command as often as you wish to keep your database up to date with OSM. You can put it in a cron job that runs every minute if you like. The first run may take a few minutes to catch up but each subsequent run should only take a few seconds to finish.
 
